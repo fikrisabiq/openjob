@@ -55,7 +55,7 @@ export const getAppById = async (req, res, next) => {
     return next(new NotFoundError('Aplikasi tidak ditemukan'));
   }
 
-  return response(res, 200, 'Aplikasi sukses ditampilkan', { app });
+  return response(res, 200, 'Aplikasi sukses ditampilkan', app);
 };
 
 export const editAppById = async (req, res, next) => {

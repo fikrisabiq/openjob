@@ -30,7 +30,7 @@ export const getCompanyById = async (req, res, next) => {
     return next(new NotFoundError('Perusahaan tidak ditemukan'));
   }
 
-  return response(res, 200, 'Perusahaan sukses ditampilkan', { company });
+  return response(res, 200, 'Perusahaan sukses ditampilkan', company);
 };
 
 export const editCompanyById = async (req, res, next) => {

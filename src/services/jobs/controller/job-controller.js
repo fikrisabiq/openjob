@@ -25,7 +25,7 @@ export const getJobById = async (req, res, next) => {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
 
-  return response(res, 200, 'Pekerjaan sukses ditampilkan', { job });
+  return response(res, 200, 'Pekerjaan sukses ditampilkan', job);
 };
 
 export const getJobByCompanyId = async (req, res, next) => {

@@ -6,9 +6,9 @@ import authenticateToken from '../../../middlewares/auth.js';
 
 const router = express.Router();
 
-router.post('/applications', authenticateToken, createBookmark);
-router.get('/applications', getBookmarks);
-router.get('/applications/:id', getBookmarksById);
-router.delete('/applications/:id', authenticateToken, deleteBookmarkById);
+router.post('/jobs/:jobId/bookmark', authenticateToken, createBookmark);
+router.get('/bookmarks', getBookmarks);
+router.get('/jobs/:jobId/bookmark/:id', getBookmarksById);
+router.delete('/jobs/:jobId/bookmark', authenticateToken, deleteBookmarkById);
 
 export default router;

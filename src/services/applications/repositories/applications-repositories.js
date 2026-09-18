@@ -71,7 +71,7 @@ class AppsRepositories {
     const updatedAt = new Date().toISOString();
 
     const query = {
-      text: 'UPDATE applications SET name = $1, location = $2, description = $3, updated_at = $4 WHERE id = $5 RETURNING id',
+      text: 'UPDATE applications SET user_id = $1, job_id = $2, status = $3, updated_at = $4 WHERE id = $5 RETURNING id',
       values: [user_id, job_id, status, updatedAt, id],
     };
 

@@ -88,7 +88,7 @@ class JobsRepositories {
 
     const result = await this.pool.query(query);
 
-    return result.rows[0];
+    return result.rows;
   }
 
   async getJobByCategoryId(category_id) {
@@ -103,7 +103,7 @@ class JobsRepositories {
 
     const result = await this.pool.query(query);
 
-    return result.rows[0];
+    return result.rows;
   }
 
   async editJob(id, {

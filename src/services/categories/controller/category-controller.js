@@ -4,7 +4,7 @@ import response from '../../../utils/response.js';
 
 export const createCategories = async (req, res, next) => {
   const { name } = req.validated;
-  const categories = await CategoiesRepositories.createcategories({
+  const categories = await CategoiesRepositories.createCategories({
     name
   });
   if (!categories) {
@@ -28,7 +28,7 @@ export const getCategoryById = async (req, res, next) => {
     return next(new NotFoundError('Kategori tidak ditemukan'));
   }
 
-  return response(res, 200, 'Kategori sukses ditampilkan', { category });
+  return response(res, 200, 'Kategori sukses ditampilkan', category);
 };
 
 export const editCategoryById = async (req, res, next) => {
