@@ -39,7 +39,7 @@ class AppsRepositories {
 
   async getAppByUserId(userId) {
     const query = {
-      text: `SELECT applications.id, users.nama AS "Nama User", jobs.nama AS "Pekerjaan", applications.status 
+      text: `SELECT applications.id, applications.user_id, users.name AS "Nama User", jobs.title AS "Pekerjaan", applications.status 
       FROM applications
       INNER JOIN users ON applications.user_id = users.id
       LEFT JOIN jobs ON applications.job_id = jobs.id
@@ -49,30 +49,30 @@ class AppsRepositories {
 
     const result = await this.pool.query(query);
 
-    return result.rows[0];
+    return result.rows;
   }
 
-  async getAppByCompanyId(companyId) {
+  async getAppByJobId(JobId) {
     const query = {
-      text: `SELECT applications.id, users.nama AS "Nama User", jobs.nama AS "Pekerjaan", applications.status 
+      text: `SELECT applications.id, applications.job_id, users.name AS "Nama User", jobs.title AS "Pekerjaan", applications.status 
       FROM applications
       INNER JOIN jobs ON applications.job_id = jobs.id
       LEFT JOIN users ON applications.user_id = users.id
-      WHERE applications.user_id = $1`,
-      values: [companyId],
+      WHERE applications.job_id = $1`,
+      values: [JobId],
     };
 
     const result = await this.pool.query(query);
 
-    return result.rows[0];
+    return result.rows;
   }
 
-  async editApp({ id, user_id, job_id, status }) {
+  async editApp({ id, status }) {
     const updatedAt = new Date().toISOString();
 
     const query = {
-      text: 'UPDATE applications SET user_id = $1, job_id = $2, status = $3, updated_at = $4 WHERE id = $5 RETURNING id',
-      values: [user_id, job_id, status, updatedAt, id],
+      text: 'UPDATE applications SET status = $1, updated_at = $2 WHERE id = $3 RETURNING id',
+      values: [status, updatedAt, id],
     };
 
     const result = await this.pool.query(query);

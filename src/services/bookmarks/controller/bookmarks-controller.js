@@ -26,22 +26,21 @@ export const getBookmarks = async (req, res) => {
 };
 
 export const getBookmarksById = async (req, res, next) => {
-  const { userId } = req.user;
-  const { jobId } = req.params;
+  const { id, jobId } = req.params;
 
-  const bookmark = await BookmarksRepositories.getBookmarksById(userId, jobId);
+  const bookmark = await BookmarksRepositories.getBookmarksById(id, jobId);
 
   if (!bookmark) {
     return next(new NotFoundError('Bookmark tidak ditemukan'));
   }
 
-  return response(res, 200, 'Bookmark sukses ditampilkan', { bookmark });
+  return response(res, 200, 'Bookmark sukses ditampilkan', bookmark);
 };
 
 export const deleteBookmarkById = async (req, res, next) => {
-  const { id } = req.params;
+  const { jobId } = req.params;
 
-  const deleteBookmark = await BookmarksRepositories.deleteBookmark(id);
+  const deleteBookmark = await BookmarksRepositories.deleteBookmark(jobId);
 
   if (!deleteBookmark) {
     return next(new NotFoundError('Bookmark tidak ditemukan'));

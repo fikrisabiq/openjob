@@ -40,17 +40,28 @@ class UserRepositories {
     };
 
     const user = await this._pool.query(query);
-    if (!user) {
+    if (!user.rowCount) {
       return null;
     }
 
     const { id, password: hashedPassword } = user.rows[0];
-    const isPasswordNatch = await bcrypt.compare(password, hashedPassword);
+    const isPasswordMatch = await bcrypt.compare(password, hashedPassword);
 
-    if (!isPasswordNatch) {
+    if (!isPasswordMatch) {
       return null;
     }
     return id;
+  }
+
+  async verifyNewEmail(email) {
+    const query = {
+      text: 'SELECT email FROM users WHERE email = $1',
+      values: [email],
+    };
+
+    const result = await this._pool.query(query);
+
+    return result.rows.length > 0;
   }
 }
 

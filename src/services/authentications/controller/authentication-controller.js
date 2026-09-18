@@ -18,7 +18,7 @@ export const login = async (req, res, next) => {
 
   await AuthenticationRepositories.addRefreshToken(refreshToken);
 
-  return response(res, 201, 'Authentication berhasil ditambahkan', {
+  return response(res, 200, 'Authentication berhasil ditambahkan', {
     accessToken,
     refreshToken,
   });

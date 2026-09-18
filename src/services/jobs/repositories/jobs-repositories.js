@@ -56,12 +56,34 @@ class JobsRepositories {
     return result.rows[0];
   }
 
-  async getJobs() {
-    const query = {
-      text: 'SELECT * FROM jobs'
-    };
+  async getJobs({ title, companyName } = {}) {
+    let queryText = `
+    SELECT 
+      jobs.*,
+      companies.name AS company_name,
+      categories.name AS category_name
+    FROM jobs
+    LEFT JOIN companies ON jobs.company_id = companies.id
+    LEFT JOIN categories ON jobs.category_id = categories.id
+    WHERE 1=1
+  `;
+    const values = [];
 
-    const result = await this.pool.query(query);
+    if (title && title.trim() !== '') {
+      values.push(`%${title.trim()}%`);
+      queryText += ` AND jobs.title ILIKE $${values.length}`;
+    }
+
+    if (companyName && companyName.trim() !== '') {
+      values.push(`%${companyName.trim()}%`);
+      queryText += ` AND companies.name ILIKE $${values.length}`;
+    }
+
+    const result = await this.pool.query({
+      text: queryText,
+      values,
+    });
+
     return result.rows;
   }
 
@@ -78,7 +100,7 @@ class JobsRepositories {
 
   async getJobByCompanyId(company_id) {
     const query = {
-      text: `SELECT jobs.id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
+      text: `SELECT jobs.id, jobs.company_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
       FROM jobs
       INNER JOIN companies ON jobs.company_id = companies.id
       LEFT JOIN categories ON jobs.category_id = categories.id
@@ -93,7 +115,7 @@ class JobsRepositories {
 
   async getJobByCategoryId(category_id) {
     const query = {
-      text: `SELECT jobs.id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
+      text: `SELECT jobs.id, jobs.category_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
       FROM jobs
       INNER JOIN categories ON jobs.category_id = categories.id
       LEFT JOIN companies ON jobs.company_id = companies.id
@@ -157,7 +179,7 @@ class JobsRepositories {
       ],
     };
 
-    const result = await this._pool.query(query);
+    const result = await this.pool.query(query);
     return result.rows[0]; // Bernilai row yang terupdate, atau undefined jika id tidak ditemukan
   }
 

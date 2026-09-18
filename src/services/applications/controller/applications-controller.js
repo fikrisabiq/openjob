@@ -5,70 +5,68 @@ import response from '../../../utils/response.js';
 
 export const createApp = async (req, res, next) => {
   const { user_id, job_id, status } = req.validated;
-  const app = await AppsRepositories.createApp({
+  const application = await AppsRepositories.createApp({
     user_id,
     job_id,
     status
   });
-  if (!app) {
+  if (!application) {
     return next(new InvariantError('Aplikasi gagal ditambahkan'));
   }
 
-  return response(res, 201, 'Aplikasi berhasil ditambahkan', app);
+  return response(res, 201, 'Aplikasi berhasil ditambahkan', application);
 };
 
 export const getApps = async (req, res) => {
-  const apps = await AppsRepositories.getApps();
-  return response(res, 200, 'Aplikasi sukses ditampilkan', { apps });
+  const applications = await AppsRepositories.getApps();
+  return response(res, 200, 'Aplikasi sukses ditampilkan', { applications });
 };
 
 export const getAppByUserId = async (req, res, next) => {
   const { userId } = req.params;
 
-  const app = await AppsRepositories.getAppByUserId(userId);
+  const applications = await AppsRepositories.getAppByUserId(userId);
 
-  if (!app) {
+  if (!applications) {
     return next(new NotFoundError('Aplikasi tidak ditemukan'));
   }
 
-  return response(res, 200, 'Aplikasi sukses ditampilkan', { app });
+  return response(res, 200, 'Aplikasi sukses ditampilkan', { applications });
 };
 
-export const getAppByCompanyId = async (req, res, next) => {
-  const { CompanyId } = req.params;
+export const getAppByJobId = async (req, res, next) => {
+  const { JobId } = req.params;
 
-  const app = await AppsRepositories.getAppByCompanyId(CompanyId);
+  const applications = await AppsRepositories.getAppByJobId(JobId);
 
-  if (!app) {
+  if (!applications) {
     return next(new NotFoundError('Aplikasi tidak ditemukan'));
   }
 
-  return response(res, 200, 'Aplikasi sukses ditampilkan', { app });
+  return response(res, 200, 'Aplikasi sukses ditampilkan', { applications });
 };
 
 export const getAppById = async (req, res, next) => {
   const { id } = req.params;
 
-  const app = await AppsRepositories.getAppById(id);
+  const application = await AppsRepositories.getAppById(id);
 
-  if (!app) {
+  if (!application) {
     return next(new NotFoundError('Aplikasi tidak ditemukan'));
   }
 
-  return response(res, 200, 'Aplikasi sukses ditampilkan', app);
+  return response(res, 200, 'Aplikasi sukses ditampilkan', application);
 };
 
 export const editAppById = async (req, res, next) => {
   const { id } = req.params;
-  const { user_id, job_id, status } = req.validated;
-  const app = await AppsRepositories.editApp({
+  const { status } = req.validated;
+  const application = await AppsRepositories.editApp({
     id,
-    user_id,
-    job_id,
     status
   });
 
-  if (!app) {
+  if (!application) {
     return next(new NotFoundError('Aplikasi tidak ditemukan'));
   }
 

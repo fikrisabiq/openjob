@@ -6,6 +6,12 @@ import NotFoundError from '../../../exceptions/not-found-error.js';
 export const createUser = async (req, res, next) => {
   const { name, email, password, role } = req.validated;
 
+  const isEmailExist = await UserRepositories.verifyNewEmail(email);
+
+  if (isEmailExist) {
+    return next(new InvariantError('Gagal menambahkan user. Email sudah digunakan.'));
+  }
+
   const user = await UserRepositories.createUser({
     name,
     email,

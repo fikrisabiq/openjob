@@ -6,6 +6,7 @@ import categories from '../services/categories/routes/index.js';
 import jobs from '../services/jobs/routes/index.js';
 import application from '../services/applications/routes/index.js';
 import bookmarks from '../services/bookmarks/routes/index.js';
+import profile from '../services/profile/routes/index.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/', categories);
 router.use('/', jobs);
 router.use('/', application);
 router.use('/', bookmarks);
+router.use('/', profile);
 
 export default router;

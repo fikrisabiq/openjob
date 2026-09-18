@@ -1,3 +1,4 @@
+
 import JobsRepositories from '../repositories/jobs-repositories.js';
 import { InvariantError, NotFoundError } from '../../../exceptions/index.js';
 import response from '../../../utils/response.js';
@@ -11,8 +12,18 @@ export const createJob = async (req, res, next) => {
   return response(res, 201, 'Pekerjaan berhasil ditambahkan', job);
 };
 
-export const getJobs = async (req, res) => {
-  const jobs = await JobsRepositories.getJobs();
+export const getJobs = async (req, res, next) => {
+  const { title, 'company-name': companyName } = req.query;
+
+  const jobs = await JobsRepositories.getJobs({
+    title,
+    companyName,
+  });
+
+  if (!jobs) {
+    return next(new NotFoundError('Pekerjaan tidak ditemukan'));
+  }
+
   return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 
@@ -31,31 +42,31 @@ export const getJobById = async (req, res, next) => {
 export const getJobByCompanyId = async (req, res, next) => {
   const { companyId } = req.params;
 
-  const job = await JobsRepositories.getJobByCompanyId(companyId);
+  const jobs = await JobsRepositories.getJobByCompanyId(companyId);
 
-  if (!job) {
+  if (!jobs) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
 
-  return response(res, 200, 'Pekerjaan sukses ditampilkan', { job });
+  return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 
 export const getJobByCategoryId = async (req, res, next) => {
   const { categoryId } = req.params;
 
-  const job = await JobsRepositories.getJobByCategoryId(categoryId);
+  const jobs = await JobsRepositories.getJobByCategoryId(categoryId);
 
-  if (!job) {
+  if (!jobs) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
 
-  return response(res, 200, 'Pekerjaan sukses ditampilkan', { job });
+  return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 
 export const editJobById = async (req, res, next) => {
   const { id } = req.params;
 
-  const company = await JobsRepositories.editJob({ ...req.validated, id });
+  const company = await JobsRepositories.editJob(id, { ...req.validated });
 
   if (!company) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
