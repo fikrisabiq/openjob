@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { login, refreshToken, logout } from '../controller/authentication-controller.js';
 import { validate } from '../../../middlewares/validate.js';
+import authenticateToken from '../../../middlewares/auth.js';
 import {
   postAuthenticationPayloadSchema,
   putAuthenticationPayloadSchema,
@@ -11,6 +12,6 @@ const router = Router();
 
 router.post('/authentications', validate(postAuthenticationPayloadSchema), login);
 router.put('/authentications', validate(putAuthenticationPayloadSchema), refreshToken);
-router.delete('/authentications', validate(deleteAuthenticationPayloadSchema), logout);
+router.delete('/authentications', authenticateToken, validate(deleteAuthenticationPayloadSchema), logout);
 
 export default router;
