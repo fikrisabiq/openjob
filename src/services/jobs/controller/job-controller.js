@@ -15,7 +15,7 @@ export const createJob = async (req, res, next) => {
 export const getJobs = async (req, res, next) => {
   const { title, 'company-name': companyName } = req.query;
 
-  const jobs = await JobsRepositories.getJobs({
+  const { jobs, source } = await JobsRepositories.getJobs({
     title,
     companyName,
   });
@@ -24,17 +24,21 @@ export const getJobs = async (req, res, next) => {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
 
+  res.setHeader('X-Data-Source', source);
+
   return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 
 export const getJobById = async (req, res, next) => {
   const { id } = req.params;
 
-  const job = await JobsRepositories.getJobById(id);
+  const { job, source } = await JobsRepositories.getJobById(id);
 
   if (!job) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
+
+  res.setHeader('X-Data-Source', source);
 
   return response(res, 200, 'Pekerjaan sukses ditampilkan', job);
 };
@@ -42,24 +46,24 @@ export const getJobById = async (req, res, next) => {
 export const getJobByCompanyId = async (req, res, next) => {
   const { companyId } = req.params;
 
-  const jobs = await JobsRepositories.getJobByCompanyId(companyId);
+  const { jobs, source } = await JobsRepositories.getJobByCompanyId(companyId);
 
   if (!jobs) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
-
+  res.setHeader('X-Data-Source', source);
   return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 
 export const getJobByCategoryId = async (req, res, next) => {
   const { categoryId } = req.params;
 
-  const jobs = await JobsRepositories.getJobByCategoryId(categoryId);
+  const { jobs, source } = await JobsRepositories.getJobByCategoryId(categoryId);
 
   if (!jobs) {
     return next(new NotFoundError('Pekerjaan tidak ditemukan'));
   }
-
+  res.setHeader('X-Data-Source', source);
   return response(res, 200, 'Pekerjaan sukses ditampilkan', { jobs });
 };
 

@@ -1,41 +1,73 @@
 import { Pool } from 'pg';
 import { nanoid } from 'nanoid';
+import CacheService from '../../cache/redis-service.js';
 
 class CompaniesRepositories {
   constructor() {
     this.pool = new Pool();
+    this.cacheService = new CacheService();
   }
-  async createCompany({ name, location, description }) {
+  async createCompany({ name, location, description, owner }) {
     const id = nanoid(16);
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
     const query = {
-      text: 'INSERT INTO companies(id, name, location, description, created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6) RETURNING id, name, location, description, created_at, updated_at',
-      values: [id, name, location, description, createdAt, updatedAt],
+      text: 'INSERT INTO companies(id, name, location, description, owner, created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      values: [id, name, location, description, owner, createdAt, updatedAt],
     };
 
     const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      await this.cacheService.delete('companies:all');
+    }
+
     return result.rows[0];
   }
 
   async getCompanies() {
-    const query = {
-      text: 'SELECT * FROM companies'
-    };
+    const cacheKey = 'companies:all';
+    try {
+      const companies = await this.cacheService.get(cacheKey);
+      return JSON.parse(companies);
+    } catch {
+      const query = {
+        text: 'SELECT * FROM companies'
+      };
 
-    const result = await this.pool.query(query);
-    return result.rows;
+      const result = await this.pool.query(query);
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+
+      return result.rows;
+    }
   }
 
   async getCompanyById(id) {
-    const query = {
-      text: 'SELECT * FROM companies WHERE id = $1',
-      values: [id],
-    };
+    const cacheKey = `companies:${id}`;
+    try {
+      const company = await this.cacheService.get(cacheKey);
+      return JSON.parse(company);
+    } catch {
+      const query = {
+        text: 'SELECT * FROM companies WHERE id = $1',
+        values: [id],
+      };
 
-    const result = await this.pool.query(query);
+      const result = await this.pool.query(query);
 
-    return result.rows[0];
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
+
+      return result.rows[0];
+    }
   }
 
   async editCompany({ id, name, location, description }) {
@@ -48,6 +80,11 @@ class CompaniesRepositories {
 
     const result = await this.pool.query(query);
 
+    if (result.rows[0]) {
+      await this.cacheService.delete(`companies:${id}`);
+      await this.cacheService.delete('companies:all');
+    }
+
     return result.rows[0];
   }
 
@@ -58,6 +95,11 @@ class CompaniesRepositories {
     };
 
     const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      await this.cacheService.delete(`companies:${id}`);
+      await this.cacheService.delete('companies:all');
+    }
 
     return result.rows[0]?.id;
   }

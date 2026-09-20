@@ -4,10 +4,12 @@ import response from '../../../utils/response.js';
 
 export const createCompany = async (req, res, next) => {
   const { name, location, description } = req.validated;
+  const { id: owner } = req.user;
   const company = await CompaniesRepositories.createCompany({
     name,
     location,
-    description
+    description,
+    owner
   });
   if (!company) {
     return next(new InvariantError('Perusahaan gagal ditambahkan'));
@@ -17,18 +19,21 @@ export const createCompany = async (req, res, next) => {
 };
 
 export const getCompanies = async (req, res) => {
-  const companies = await CompaniesRepositories.getCompanies();
+  const { companies, source } = await CompaniesRepositories.getCompanies();
+  res.setHeader('X-Data-Source', source);
   return response(res, 200, 'Perusahaan sukses ditampilkan', { companies });
 };
 
 export const getCompanyById = async (req, res, next) => {
   const { id } = req.params;
 
-  const company = await CompaniesRepositories.getCompanyById(id);
+  const { company, source } = await CompaniesRepositories.getCompanyById(id);
 
   if (!company) {
     return next(new NotFoundError('Perusahaan tidak ditemukan'));
   }
+
+  res.setHeader('X-Data-Source', source);
 
   return response(res, 200, 'Perusahaan sukses ditampilkan', company);
 };

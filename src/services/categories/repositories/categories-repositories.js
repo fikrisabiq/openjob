@@ -1,9 +1,11 @@
 import { Pool } from 'pg';
 import { nanoid } from 'nanoid';
+import CacheService from '../../cache/redis-service.js';
 
 class CategoiesRepositories {
   constructor() {
     this.pool = new Pool();
+    this.cacheService = new CacheService();
   }
   async createCategories({ name }) {
     const id = nanoid(16);
@@ -15,27 +17,57 @@ class CategoiesRepositories {
     };
 
     const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      await this.cacheService.delete('categories:all');
+    }
+
     return result.rows[0];
   }
 
   async getCategories() {
-    const query = {
-      text: 'SELECT * FROM categories'
-    };
+    const cacheKey = 'categories:all';
+    try {
+      const categories = await this.cacheService.get(cacheKey);
+      return JSON.parse(categories);
+    } catch {
+      const query = {
+        text: 'SELECT * FROM categories'
+      };
 
-    const result = await this.pool.query(query);
-    return result.rows;
+      const result = await this.pool.query(query);
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+
+      return result.rows;
+    }
   }
 
   async getCategoryById(id) {
-    const query = {
-      text: 'SELECT * FROM categories WHERE id = $1',
-      values: [id],
-    };
+    const cacheKey = `category:${id}`;
+    try {
+      const category = await this.cacheService.get(cacheKey);
+      return JSON.parse(category);
+    } catch {
+      const query = {
+        text: 'SELECT * FROM categories WHERE id = $1',
+        values: [id],
+      };
 
-    const result = await this.pool.query(query);
+      const result = await this.pool.query(query);
 
-    return result.rows[0];
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
+
+      return result.rows[0];
+    }
   }
 
   async editCategory({ id, name }) {
@@ -48,6 +80,11 @@ class CategoiesRepositories {
 
     const result = await this.pool.query(query);
 
+    if (result.rows[0]) {
+      await this.cacheService.delete('categories:all');
+      await this.cacheService.delete(`category:${id}`);
+    }
+
     return result.rows[0];
   }
 
@@ -58,6 +95,11 @@ class CategoiesRepositories {
     };
 
     const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      await this.cacheService.delete('categories:all');
+      await this.cacheService.delete(`category:${id}`);
+    }
 
     return result.rows[0]?.id;
   }

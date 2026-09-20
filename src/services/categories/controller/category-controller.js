@@ -15,18 +15,21 @@ export const createCategories = async (req, res, next) => {
 };
 
 export const getCategories = async (req, res) => {
-  const categories = await CategoiesRepositories.getCategories();
+  const { categories, source } = await CategoiesRepositories.getCategories();
+  res.setHeader('X-Data-Source', source);
   return response(res, 200, 'Kategori sukses ditampilkan', { categories });
 };
 
 export const getCategoryById = async (req, res, next) => {
   const { id } = req.params;
 
-  const category = await CategoiesRepositories.getCategoryById(id);
+  const { category, source } = await CategoiesRepositories.getCategoryById(id);
 
   if (!category) {
     return next(new NotFoundError('Kategori tidak ditemukan'));
   }
+
+  res.setHeader('X-Data-Source', source);
 
   return response(res, 200, 'Kategori sukses ditampilkan', category);
 };

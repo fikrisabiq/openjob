@@ -12,6 +12,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/uploads', express.static('src/services/documents/file/pdf'));
 app.use(routes);
 
 app.use(ErrorHandler);

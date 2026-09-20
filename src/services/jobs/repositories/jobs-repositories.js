@@ -1,10 +1,12 @@
 /* eslint-disable camelcase */
 import { Pool } from 'pg';
 import { nanoid } from 'nanoid';
+import CacheService from '../../cache/redis-service.js';
 
 class JobsRepositories {
   constructor() {
     this.pool = new Pool();
+    this.cacheService = new CacheService();
   }
   async createJob({
     company_id,
@@ -33,7 +35,7 @@ class JobsRepositories {
           $6, $7, $8, $9,
           $10, $11, $12, $13
         )
-        RETURNING id
+        RETURNING id, category_id, company_id
       `,
       values: [
         id,
@@ -53,11 +55,22 @@ class JobsRepositories {
     };
 
     const result = await this.pool.query(query);
+    if (result.rows[0]) {
+      await this.cacheService.delete('jobs:all');
+      await this.cacheService.delete(`jobs:categories:${result.rows[0].category_id}`);
+      await this.cacheService.delete(`jobs:companies:${result.rows[0].company_id}`);
+    }
+
     return result.rows[0];
   }
 
-  async getJobs({ title, companyName } = {}) {
-    let queryText = `
+  async getJobs({ title, companyName }) {
+    const cacheKey = 'jobs:all';
+    try {
+      const jobs = await this.cacheService.get(cacheKey);
+      return JSON.parse(jobs);
+    } catch {
+      let queryText = `
     SELECT 
       jobs.*,
       companies.name AS company_name,
@@ -67,65 +80,108 @@ class JobsRepositories {
     LEFT JOIN categories ON jobs.category_id = categories.id
     WHERE 1=1
   `;
-    const values = [];
+      const values = [];
 
-    if (title && title.trim() !== '') {
-      values.push(`%${title.trim()}%`);
-      queryText += ` AND jobs.title ILIKE $${values.length}`;
+      if (title && title.trim() !== '') {
+        values.push(`%${title.trim()}%`);
+        queryText += ` AND jobs.title ILIKE $${values.length}`;
+      }
+
+      if (companyName && companyName.trim() !== '') {
+        values.push(`%${companyName.trim()}%`);
+        queryText += ` AND companies.name ILIKE $${values.length}`;
+      }
+
+      const result = await this.pool.query({
+        text: queryText,
+        values,
+      });
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+
+      return result.rows;
     }
-
-    if (companyName && companyName.trim() !== '') {
-      values.push(`%${companyName.trim()}%`);
-      queryText += ` AND companies.name ILIKE $${values.length}`;
-    }
-
-    const result = await this.pool.query({
-      text: queryText,
-      values,
-    });
-
-    return result.rows;
   }
 
   async getJobById(id) {
-    const query = {
-      text: 'SELECT * FROM jobs WHERE id = $1',
-      values: [id],
-    };
+    const cacheKey = `job:${id}`;
+    try {
+      const job = await this.cacheService.get(cacheKey);
+      return JSON.parse(job);
+    } catch {
+      const query = {
+        text: 'SELECT * FROM jobs WHERE id = $1',
+        values: [id],
+      };
 
-    const result = await this.pool.query(query);
+      const result = await this.pool.query(query);
 
-    return result.rows[0];
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
+
+      return result.rows[0];
+    }
   }
 
   async getJobByCompanyId(company_id) {
-    const query = {
-      text: `SELECT jobs.id, jobs.company_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
+    const cacheKey = `jobs:company:${company_id}`;
+    try {
+      const jobs = await this.cacheService.get(cacheKey);
+      return JSON.parse(jobs);
+    } catch {
+      const query = {
+        text: `SELECT jobs.id, jobs.company_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
       FROM jobs
       INNER JOIN companies ON jobs.company_id = companies.id
       LEFT JOIN categories ON jobs.category_id = categories.id
       WHERE jobs.company_id = $1`,
-      values: [company_id],
-    };
+        values: [company_id],
+      };
 
-    const result = await this.pool.query(query);
+      const result = await this.pool.query(query);
 
-    return result.rows;
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+
+      return result.rows;
+    }
   }
 
   async getJobByCategoryId(category_id) {
-    const query = {
-      text: `SELECT jobs.id, jobs.category_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
+    const cacheKey = `jobs:categories:${category_id}`;
+    try {
+      const jobs = await this.cacheService.get(cacheKey);
+      return JSON.parse(jobs);
+    } catch {
+      const query = {
+        text: `SELECT jobs.id, jobs.category_id, companies.name AS "Nama Perusahaan", categories.name AS "Kategori"
       FROM jobs
       INNER JOIN categories ON jobs.category_id = categories.id
       LEFT JOIN companies ON jobs.company_id = companies.id
       WHERE jobs.category_id = $1`,
-      values: [category_id],
-    };
+        values: [category_id],
+      };
 
-    const result = await this.pool.query(query);
+      const result = await this.pool.query(query);
 
-    return result.rows;
+      if (!result.rowCount) {
+        return null;
+      }
+
+      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+
+      return result.rows;
+    }
   }
 
   async editJob(id, {
@@ -160,7 +216,7 @@ class JobsRepositories {
           status = $12,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $13
-        RETURNING id
+        RETURNING id, category_id, company_id
       `,
       values: [
         company_id,
@@ -180,16 +236,29 @@ class JobsRepositories {
     };
 
     const result = await this.pool.query(query);
-    return result.rows[0]; // Bernilai row yang terupdate, atau undefined jika id tidak ditemukan
+    if (result.rows[0]) {
+      await this.cacheService.delete('jobs:all');
+      await this.cacheService.delete(`jobs:categories:${result.rows[0].category_id}`);
+      await this.cacheService.delete(`jobs:companies:${result.rows[0].company_id}`);
+      await this.cacheService.delete(`job:${id}`);
+    }
+    return result.rows[0];
   }
 
   async deleteJob(id) {
     const query = {
-      text: 'DELETE FROM jobs WHERE id = $1 RETURNING id',
+      text: 'DELETE FROM jobs WHERE id = $1 RETURNING id, category_id, company_id',
       values: [id],
     };
 
     const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      await this.cacheService.delete('jobs:all');
+      await this.cacheService.delete(`jobs:categories:${result.rows[0].category_id}`);
+      await this.cacheService.delete(`jobs:companies:${result.rows[0].company_id}`);
+      await this.cacheService.delete(`job:${id}`);
+    }
 
     return result.rows[0].id;
   }
