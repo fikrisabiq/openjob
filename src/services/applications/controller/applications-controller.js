@@ -6,6 +6,15 @@ import response from '../../../utils/response.js';
 
 export const createApp = async (req, res, next) => {
   const { user_id, job_id, status } = req.validated;
+
+  const isAppExist  = await AppsRepositories.verifyUserAlreadyApplied({
+    user_id, job_id,
+  });
+
+  if (isAppExist) {
+    return next(new InvariantError('Gagal menambahkan aplikasi. Pekerjaan sudah dilamar oleh user.'));
+  }
+
   const application = await AppsRepositories.createApp({
     user_id,
     job_id,
@@ -17,7 +26,7 @@ export const createApp = async (req, res, next) => {
   }
 
   const message = JSON.stringify({
-    applicationId: application
+    id: application.id
   });
 
   await ProducerService.sendMessage('application:notify', message);

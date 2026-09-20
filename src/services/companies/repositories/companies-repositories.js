@@ -29,21 +29,25 @@ class CompaniesRepositories {
     const cacheKey = 'companies:all';
     try {
       const companies = await this.cacheService.get(cacheKey);
-      return JSON.parse(companies);
+      return {
+        companies: JSON.parse(companies),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: 'SELECT * FROM companies'
+        text: 'SELECT id, name, location, description, created_at, updated_at FROM companies',
       };
 
       const result = await this.pool.query(query);
 
-      if (!result.rowCount) {
-        return null;
-      }
+      const companies = result.rows || [];
 
-      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
+      await this.cacheService.set(cacheKey, JSON.stringify(companies));
 
-      return result.rows;
+      return {
+        companies,
+        source: 'database',
+      };
     }
   }
 
@@ -51,7 +55,10 @@ class CompaniesRepositories {
     const cacheKey = `companies:${id}`;
     try {
       const company = await this.cacheService.get(cacheKey);
-      return JSON.parse(company);
+      return {
+        company: JSON.parse(company),
+        source: 'cache',
+      };
     } catch {
       const query = {
         text: 'SELECT * FROM companies WHERE id = $1',
@@ -61,12 +68,18 @@ class CompaniesRepositories {
       const result = await this.pool.query(query);
 
       if (!result.rowCount) {
-        return null;
+        return {
+          company: null,
+          source: 'database',
+        };
       }
 
       await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
 
-      return result.rows[0];
+      return {
+        company: result.rows[0],
+        source: 'database',
+      };
     }
   }
 

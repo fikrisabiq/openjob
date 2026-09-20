@@ -23,7 +23,7 @@ export const upload = multer({
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new ClientError('Hanya berkas format PDF yang diperbolehkan'), false);
+      cb(new ClientError('File is required: only PDF format allowed'), false);
     }
   }
 });

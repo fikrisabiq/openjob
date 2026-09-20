@@ -29,21 +29,24 @@ class CategoiesRepositories {
     const cacheKey = 'categories:all';
     try {
       const categories = await this.cacheService.get(cacheKey);
-      return JSON.parse(categories);
+      return {
+        categories: JSON.parse(categories),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: 'SELECT * FROM categories'
+        text: 'SELECT id, name, created_at, updated_at FROM categories',
       };
 
       const result = await this.pool.query(query);
+      const categories = result.rows || [];
 
-      if (!result.rowCount) {
-        return null;
-      }
+      await this.cacheService.set(cacheKey, JSON.stringify(categories));
 
-      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
-
-      return result.rows;
+      return {
+        categories,
+        source: 'database',
+      };
     }
   }
 
@@ -51,22 +54,31 @@ class CategoiesRepositories {
     const cacheKey = `category:${id}`;
     try {
       const category = await this.cacheService.get(cacheKey);
-      return JSON.parse(category);
+      return {
+        category: JSON.parse(category),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: 'SELECT * FROM categories WHERE id = $1',
+        text: 'SELECT id, name, created_at, updated_at FROM categories WHERE id = $1',
         values: [id],
       };
 
       const result = await this.pool.query(query);
 
       if (!result.rowCount) {
-        return null;
+        return {
+          category: null,
+          source: 'database',
+        };
       }
 
       await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
 
-      return result.rows[0];
+      return {
+        category: result.rows[0],
+        source: 'database',
+      };
     }
   }
 

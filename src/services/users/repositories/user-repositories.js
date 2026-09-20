@@ -28,7 +28,10 @@ class UserRepositories {
     const cacheKey = `user:${id}`;
     try {
       const user = await this.cacheService.get(cacheKey);
-      return JSON.parse(user);
+      return {
+        source: 'cache',
+        user: JSON.parse(user),
+      };
     } catch {
       const query = {
         text: 'SELECT * FROM users WHERE id = $1',
@@ -38,12 +41,18 @@ class UserRepositories {
       const result = await this._pool.query(query);
 
       if (!result.rowCount) {
-        return null;
+        return {
+          source: 'database',
+          user: null,
+        };
       }
 
       await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
 
-      return result.rows[0];
+      return {
+        source: 'database',
+        user: result.rows[0],
+      };
     }
   }
 

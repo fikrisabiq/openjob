@@ -20,11 +20,30 @@ class ProfileRepositories {
 
   async getProfileApplications(userId) {
     const query = {
-      text: `SELECT users.name, jobs.title, applications.status, applications.created_at, applications.updated_at
+      text: `
+      SELECT 
+        applications.id,
+        applications.user_id,
+        applications.job_id,
+        applications.status,
+        applications.created_at,
+        applications.updated_at,
+        jobs.title,
+        jobs.description,
+        jobs.experience_level,
+        jobs.job_type,
+        jobs.is_salary_visible,
+        companies.name AS company_name,
+        companies.location AS company_location,
+        categories.name AS category_name,
+        users.name AS user_name
       FROM applications
       INNER JOIN users ON applications.user_id = users.id
-      LEFT JOIN jobs ON applications.job_id = jobs.id
-      WHERE users.id = $1`,
+      INNER JOIN jobs ON applications.job_id = jobs.id
+      INNER JOIN companies ON jobs.company_id = companies.id
+      INNER JOIN categories ON jobs.category_id = categories.id
+      WHERE applications.user_id = $1
+    `,
       values: [userId],
     };
 

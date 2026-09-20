@@ -7,11 +7,11 @@ import { UPLOAD_FOLDER } from '../storage/documents-config.js';
 
 export const uploadDocument = async (req, res, next) => {
   if (!req.file) {
-    return next(new ClientError('required'));
+    return next(new ClientError('File is required'));
   }
 
   const { filename, originalname, size } = req.file;
-  const { id:userId } = req.user;
+  const { id: userId } = req.user;
 
   const document = await DocumentsRepositories.addDocument({
     userId,
@@ -20,7 +20,12 @@ export const uploadDocument = async (req, res, next) => {
     size,
   });
 
-  return response(res, 201, 'Dokumen berhasil diunggah', document);
+  return response(res, 201, 'Dokumen berhasil diunggah', {
+    documentId: document.id,
+    filename: document.filename,
+    originalName: document.originalName,
+    size: Number(document.size),
+  });
 };
 
 export const getDocuments = async (req, res) => {
@@ -39,7 +44,6 @@ export const getDocumentById = async (req, res, next) => {
   const filePath = path.resolve(UPLOAD_FOLDER, document.filename);
 
   res.setHeader('Content-Type', 'application/pdf');
-
   res.setHeader(
     'Content-Disposition',
     `inline; filename="${document.original_name}"`
@@ -58,11 +62,7 @@ export const deleteDocumentById = async (req, res, next) => {
   }
 
   const filePath = path.resolve(UPLOAD_FOLDER, deletedDocument.filename);
-  try {
-    await fs.unlink(filePath);
-  } catch (err) {
-    console.error(`Gagal menghapus berkas fisik: ${err.message}`);
-  }
+  await fs.unlink(filePath);
 
   return response(res, 200, 'Dokumen berhasil dihapus');
 };

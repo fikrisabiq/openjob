@@ -8,11 +8,19 @@ class AppsRepositories {
     this.pool = new Pool();
     this.cacheService = new CacheService();
   }
-  async createApp({ user_id, job_id, status }) {
+
+  async createApp({ user_id, job_id, status = 'pending' }) {
     const id = nanoid(16);
+    const createdAt = new Date().toISOString();
+    const updatedAt = createdAt;
+
     const query = {
-      text: 'INSERT INTO applications(id, user_id, job_id, status) VALUES($1, $2, $3, $4) RETURNING id',
-      values: [id, user_id, job_id, status],
+      text: `
+        INSERT INTO applications(id, user_id, job_id, status, created_at, updated_at) 
+        VALUES($1, $2, $3, $4, $5, $6) 
+        RETURNING id, user_id, job_id, status
+      `,
+      values: [id, user_id, job_id, status, createdAt, updatedAt],
     };
 
     const result = await this.pool.query(query);
@@ -30,21 +38,42 @@ class AppsRepositories {
     const cacheKey = 'apps:all';
     try {
       const applications = await this.cacheService.get(cacheKey);
-      return JSON.parse(applications);
+      return {
+        applications: JSON.parse(applications),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: 'SELECT * FROM applications'
+        text: `
+          SELECT 
+            applications.id,
+            applications.user_id,
+            applications.job_id,
+            applications.status,
+            applications.created_at,
+            applications.updated_at,
+            users.name AS user_name,
+            users.email AS user_email,
+            jobs.title AS job_title,
+            jobs.job_type,
+            jobs.location_type AS job_location_type,
+            jobs.location_city AS job_location_city,
+            jobs.status AS job_status
+          FROM applications
+          INNER JOIN users ON applications.user_id = users.id
+          INNER JOIN jobs ON applications.job_id = jobs.id
+        `,
       };
 
       const result = await this.pool.query(query);
+      const applications = result.rows || [];
 
-      if (!result.rowCount) {
-        return null;
-      }
+      await this.cacheService.set(cacheKey, JSON.stringify(applications));
 
-      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
-
-      return result.rows;
+      return {
+        applications,
+        source: 'database',
+      };
     }
   }
 
@@ -52,7 +81,10 @@ class AppsRepositories {
     const cacheKey = `app:${id}`;
     try {
       const application = await this.cacheService.get(cacheKey);
-      return JSON.parse(application);
+      return {
+        application: JSON.parse(application),
+        source: 'cache',
+      };
     } catch {
       const query = {
         text: 'SELECT * FROM applications WHERE id = $1',
@@ -62,12 +94,18 @@ class AppsRepositories {
       const result = await this.pool.query(query);
 
       if (!result.rowCount) {
-        return null;
+        return {
+          application: null,
+          source: 'database',
+        };
       }
 
       await this.cacheService.set(cacheKey, JSON.stringify(result.rows[0]));
 
-      return result.rows[0];
+      return {
+        application: result.rows[0],
+        source: 'database',
+      };
     }
   }
 
@@ -75,54 +113,66 @@ class AppsRepositories {
     const cacheKey = `apps:users:${userId}`;
     try {
       const applications = await this.cacheService.get(cacheKey);
-      return JSON.parse(applications);
+      return {
+        applications: JSON.parse(applications),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: `SELECT applications.id, applications.user_id, users.name AS "Nama User", jobs.title AS "Pekerjaan", applications.status 
-      FROM applications
-      INNER JOIN users ON applications.user_id = users.id
-      LEFT JOIN jobs ON applications.job_id = jobs.id
-      WHERE applications.user_id = $1`,
+        text: 'SELECT * FROM applications WHERE user_id = $1',
         values: [userId],
       };
 
       const result = await this.pool.query(query);
+      const applications = result.rows || [];
 
-      if (!result.rowCount) {
-        return null;
-      }
+      await this.cacheService.set(cacheKey, JSON.stringify(applications));
 
-      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
-
-      return result.rows;
+      return {
+        applications,
+        source: 'database',
+      };
     }
   }
 
-  async getAppByJobId(JobId) {
-    const cacheKey = `apps:jobs:${JobId}`;
+  async getAppByJobId(jobId) {
+    const cacheKey = `apps:jobs:${jobId}`;
     try {
       const applications = await this.cacheService.get(cacheKey);
-      return JSON.parse(applications);
+      return {
+        applications: JSON.parse(applications),
+        source: 'cache',
+      };
     } catch {
       const query = {
-        text: `SELECT applications.id, applications.job_id, users.name AS "Nama User", jobs.title AS "Pekerjaan", applications.status 
-      FROM applications
-      INNER JOIN jobs ON applications.job_id = jobs.id
-      LEFT JOIN users ON applications.user_id = users.id
-      WHERE applications.job_id = $1`,
-        values: [JobId],
+        text: 'SELECT * FROM applications WHERE job_id = $1',
+        values: [jobId],
       };
 
       const result = await this.pool.query(query);
+      const applications = result.rows || [];
 
-      if (!result.rowCount) {
-        return null;
-      }
+      await this.cacheService.set(cacheKey, JSON.stringify(applications));
 
-      await this.cacheService.set(cacheKey, JSON.stringify(result.rows));
-
-      return result.rows;
+      return {
+        applications,
+        source: 'database',
+      };
     }
+  }
+
+  async verifyUserAlreadyApplied({ user_id, job_id }) {
+    const query = {
+      text: 'SELECT id FROM applications WHERE user_id = $1 AND job_id = $2',
+      values: [user_id, job_id],
+    };
+
+    const result = await this.pool.query(query);
+
+    if (result.rows[0]) {
+      return result.rows[0];
+    }
+    return null;
   }
 
   async editApp({ id, status }) {
@@ -140,9 +190,10 @@ class AppsRepositories {
       await this.cacheService.delete(`apps:jobs:${result.rows[0].job_id}`);
       await this.cacheService.delete(`apps:users:${result.rows[0].user_id}`);
       await this.cacheService.delete(`app:${id}`);
+      return result.rows[0];
     }
 
-    return result.rows[0];
+    return null;
   }
 
   async deleteApp(id) {
@@ -158,9 +209,10 @@ class AppsRepositories {
       await this.cacheService.delete(`apps:jobs:${result.rows[0].job_id}`);
       await this.cacheService.delete(`apps:users:${result.rows[0].user_id}`);
       await this.cacheService.delete(`app:${id}`);
+      return result.rows[0].id;
     }
 
-    return result.rows[0].id;
+    return null;
   }
 }
 
