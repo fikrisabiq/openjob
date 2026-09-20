@@ -20,7 +20,6 @@ class BookmarksRepositories {
     const result = await this.pool.query(query);
 
     if (result.rows[0]) {
-      // Invalidation cache user & detail
       await this.cacheService.delete(`bookmarks:user:${result.rows[0].user_id}`);
       await this.cacheService.delete(`bookmarks:jobs:${result.rows[0].job_id}`);
       await this.cacheService.delete(`bookmark:users:${result.rows[0].user_id}:jobs:${result.rows[0].job_id}`);
@@ -38,7 +37,6 @@ class BookmarksRepositories {
         source: 'cache',
       };
     } catch {
-      // Query dengan JOIN lengkap ke jobs, companies, dan categories untuk menghasilkan tepat 18 fields
       const query = {
         text: `
           SELECT 

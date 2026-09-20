@@ -1,4 +1,3 @@
-// mengimpor dotenv dan menjalankan konfigurasinya
 import 'dotenv/config';
 
 import express from 'express';

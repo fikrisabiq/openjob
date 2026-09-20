@@ -78,7 +78,6 @@ class JobsRepositories {
     } catch {
       let queryText;
 
-      // Jika search, kita sertakan company_name untuk verifikasi pencarian di Postman
       if (isSearch) {
         queryText = `
           SELECT 
@@ -89,7 +88,6 @@ class JobsRepositories {
           WHERE 1=1
         `;
       } else {
-        // Tepat 13 kolom tabel jobs agar lolos pm.expect(Object.keys(job)).to.length(13)
         queryText = `
           SELECT 
             id, company_id, category_id, title, description,
