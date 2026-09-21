@@ -26,7 +26,7 @@ export const createApp = async (req, res, next) => {
   }
 
   const message = JSON.stringify({
-    id: application.id
+    application_id: application.id
   });
 
   await ProducerService.sendMessage('application:notify', message);
