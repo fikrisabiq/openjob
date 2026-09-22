@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 import AppsRepositories from '../repositories/applications-repositories.js';
+import jobsRepositories from '../../jobs/repositories/jobs-repositories.js';
 import ProducerService from '../../rabbitmq/producerService.js';
 import { InvariantError, NotFoundError } from '../../../exceptions/index.js';
 import response from '../../../utils/response.js';
@@ -7,12 +8,18 @@ import response from '../../../utils/response.js';
 export const createApp = async (req, res, next) => {
   const { user_id, job_id, status } = req.validated;
 
+  const isJobExist = await jobsRepositories.getJobById(job_id);
+
+  if (!isJobExist) {
+    return next(new NotFoundError('Gagal menambahkan aplikasi. Pekerjaan tidak ditemukan'));
+  }
+
   const isAppExist  = await AppsRepositories.verifyUserAlreadyApplied({
     user_id, job_id,
   });
 
   if (isAppExist) {
-    return next(new InvariantError('Gagal menambahkan aplikasi. Pekerjaan sudah dilamar oleh user.'));
+    return next(new InvariantError('Gagal menambahkan aplikasi. Pekerjaan sudah dilamar oleh user'));
   }
 
   const application = await AppsRepositories.createApp({
