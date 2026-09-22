@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import users from '../services/users/routes/index.js';
-import authentications from '../services/authentications/routes/index.js';
-import companies from '../services/companies/routes/index.js';
-import categories from '../services/categories/routes/index.js';
-import jobs from '../services/jobs/routes/index.js';
-import application from '../services/applications/routes/index.js';
-import bookmarks from '../services/bookmarks/routes/index.js';
-import profile from '../services/profile/routes/index.js';
-import documents from '../services/documents/routes/index.js';;
+import users from '../modules/users/users-routes.js';
+import authentications from '../modules/authentications/authentications-routers.js';
+import companies from '../modules/companies/companies-routes.js';
+import categories from '../modules/categories/categories-routes.js';
+import jobs from '../modules/jobs/jobs-routes.js';
+import applications from '../modules/applications/applications-routes.js';
+import bookmarks from '../modules/bookmarks/bookmarks-routes.js';
+import profile from '../modules/profile/profile-routes.js';
+import documents from '../modules/documents/documents-routes.js';
+
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.use('/', authentications);
 router.use('/', companies);
 router.use('/', categories);
 router.use('/', jobs);
-router.use('/', application);
+router.use('/', applications);
 router.use('/', bookmarks);
 router.use('/', profile);
 router.use('/', documents);
