@@ -19,6 +19,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "graphql": "^17.1.0",
+    "graphql-yoga": "^6.1.0",
     "joi": "^18.2.9",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
