@@ -41,9 +41,9 @@ export const getBookmarksById = async (req, res, next) => {
 };
 
 export const deleteBookmarkById = async (req, res, next) => {
-  const { jobId } = req.params;
+  const { jobId, userId } = req.params;
 
-  const deleteBookmark = await BookmarksRepositories.deleteBookmark(jobId);
+  const deleteBookmark = await BookmarksRepositories.deleteBookmark(jobId, userId);
 
   if (!deleteBookmark) {
     return next(new NotFoundError('Bookmark tidak ditemukan'));

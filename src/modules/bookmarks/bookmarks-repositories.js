@@ -39,7 +39,7 @@ class BookmarksRepositories {
     } catch {
       const query = {
         text: `
-          SELECT 
+          SELECT
             bookmarks.id,
             bookmarks.user_id,
             bookmarks.job_id,
@@ -90,7 +90,7 @@ class BookmarksRepositories {
     } catch {
       const query = {
         text: `
-          SELECT 
+          SELECT
             bookmarks.*,
             jobs.title AS job_title
           FROM bookmarks
@@ -118,10 +118,10 @@ class BookmarksRepositories {
     }
   }
 
-  async deleteBookmark(jobId) {
+  async deleteBookmark(jobId, userId) {
     const query = {
-      text: 'DELETE FROM bookmarks WHERE job_id = $1 RETURNING id, user_id, job_id',
-      values: [jobId],
+      text: 'DELETE FROM bookmarks WHERE job_id = $1 AND user_id = $2 RETURNING id, user_id, job_id',
+      values: [jobId, userId],
     };
 
     const result = await this.pool.query(query);
